@@ -2,3 +2,4 @@ python-telegram-bot
 discord.py
 python-dotenv
 nest-asyncio
+python-dotenv
