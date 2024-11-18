@@ -26,7 +26,7 @@ This bot synchronizes messages and media between a Telegram group (or topics) an
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository_url>
+git clone https://github.com/Masniper/telegram-discord-sync-bot
 cd telegram-discord-sync-bot
 ```
 
