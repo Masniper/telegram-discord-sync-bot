@@ -161,8 +161,8 @@ async def on_message(message):
         processed_content = message.content
         if message.mentions:  
             for user in message.mentions:
-                processed_content = processed_content.replace(f"<@{user.id}>", f"@{user.display_name}")
-
+             processed_content = processed_content.replace(f"<@{user.id}>", f"has ben mentioned 🔔 {user.display_name} 🔔")
+      
         if message.attachments:
             for attachment in message.attachments:
                 file_path = os.path.join(TEMP_DIR, attachment.filename)
