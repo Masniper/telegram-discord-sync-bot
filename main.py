@@ -79,13 +79,13 @@ async def sync_discord_channels():
     existing_channels = {channel.name: channel.id for channel in guild.text_channels}
 
     # Create or find General channel
-    if "general" not in existing_channels:
-        channel = await guild.create_text_channel(name="general")
-        discord_channel_cache[0] = channel.id  # Use 0 as key for General channel
-        logger.info(f"[Discord] Created General channel: general (ID: {channel.id})")
-    else:
-        discord_channel_cache[0] = existing_channels["general"]
-        logger.info(f"[Discord] Found existing General channel: general (ID: {existing_channels['general']})")
+    # if "general" not in existing_channels:
+    #     channel = await guild.create_text_channel(name="general")
+    #     discord_channel_cache[0] = channel.id  # Use 0 as key for General channel
+    #     logger.info(f"[Discord] Created General channel: general (ID: {channel.id})")
+    # else:
+    #     discord_channel_cache[0] = existing_channels["general"]
+    #     logger.info(f"[Discord] Found existing General channel: general (ID: {existing_channels['general']})")
 
     # Sync other channels with topics
     for topic_id, topic_name in topic_cache.items():
@@ -151,33 +151,40 @@ async def on_message(message):
     try:
         if message.author == discord_bot.user:
             return
-
         topic_id = next((tid for tid, cid in discord_channel_cache.items() if cid == message.channel.id), 0)
+        if topic_id == 0 and message.channel.name != "general":
+            logger.info(f"[Discord → Telegram] Skipping message from {message.author.display_name} in channel {message.channel.name}: No associated topic.")
+            return
+
         logger.info(f"[Discord → Telegram] Message from {message.author.display_name} in channel {message.channel.name}: {message.content or 'Attachment'}")
 
-        if topic_id is not None:
-            if message.attachments:
-                for attachment in message.attachments:
-                    file_path = os.path.join(TEMP_DIR, attachment.filename)
-                    await attachment.save(file_path)
-                    logger.info(f"[Discord → Telegram] Saved attachment: {file_path}")
-                    with open(file_path, "rb") as f:
-                        await telegram_bot.send_document(
-                            chat_id=TELEGRAM_GROUP_ID,
-                            document=InputFile(f),
-                            caption=f"**{message.author.display_name}** sent this from Discord",
-                            message_thread_id=topic_id if topic_id != 0 else None,
-                        )
-                    logger.info(f"[Discord → Telegram] Sent attachment to Telegram: {file_path}")
-                    os.remove(file_path)
+        processed_content = message.content
+        if message.mentions:  
+            for user in message.mentions:
+                processed_content = processed_content.replace(f"<@{user.id}>", f"@{user.display_name}")
 
-            if message.content:
-                await telegram_bot.send_message(
-                    chat_id=TELEGRAM_GROUP_ID,
-                    text=f"{message.author.display_name} From Discord: \n{message.content}",
-                    message_thread_id=topic_id if topic_id != 0 else None,
-                )
-                logger.info(f"[Discord → Telegram] Sent text message to Telegram: {message.content}")
+        if message.attachments:
+            for attachment in message.attachments:
+                file_path = os.path.join(TEMP_DIR, attachment.filename)
+                await attachment.save(file_path)
+                logger.info(f"[Discord → Telegram] Saved attachment: {file_path}")
+                with open(file_path, "rb") as f:
+                    await telegram_bot.send_document(
+                        chat_id=TELEGRAM_GROUP_ID,
+                        document=InputFile(f),
+                        caption=f"**{message.author.display_name}** sent this from Discord",
+                        message_thread_id=topic_id,
+                    )
+                logger.info(f"[Discord → Telegram] Sent attachment to Telegram: {file_path}")
+                os.remove(file_path)
+
+        if processed_content:
+            await telegram_bot.send_message(
+                chat_id=TELEGRAM_GROUP_ID,
+                text=f"{message.author.display_name} From Discord: \n{processed_content}",
+                message_thread_id=topic_id,
+            )
+            logger.info(f"[Discord → Telegram] Sent text message to Telegram: {processed_content}")
     except Exception as e:
         logger.error(f"[Discord → Telegram] Error: {e}", exc_info=True)
 
