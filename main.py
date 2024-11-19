@@ -115,7 +115,7 @@ async def handle_telegram_message(update: Update, context: ContextTypes.DEFAULT_
                 channel = discord_bot.get_channel(discord_channel_id)
                 if channel:
                     if update.message.text:
-                        await channel.send(f"**{username}** From Telegram: \n  {update.message.text}")
+                        await channel.send(f"**{username}** From Telegram: \n{update.message.text}")
                     elif update.message.voice:
                         # Handle voice messages
                         file = await telegram_bot.get_file(update.message.voice.file_id)
@@ -174,7 +174,7 @@ async def on_message(message):
             if message.content:
                 await telegram_bot.send_message(
                     chat_id=TELEGRAM_GROUP_ID,
-                    text=f"{message.author.display_name} From Discord: \n {message.content}",
+                    text=f"{message.author.display_name} From Discord: \n{message.content}",
                     message_thread_id=topic_id if topic_id != 0 else None,
                 )
                 logger.info(f"[Discord → Telegram] Sent text message to Telegram: {message.content}")
